@@ -1,0 +1,49 @@
+[project]
+name = "api-web-framework"
+version = "0.1.0"
+requires-python = ">=3.11"
+description = "University final-project API scaffold (Django + DRF)."
+
+[tool.pytest.ini_options]
+# --ds is pytest-django's highest-precedence settings selector; it beats an ambient
+# DJANGO_SETTINGS_MODULE (manage.py/wsgi.py setdefault to dev) that would otherwise
+# make the suite run against dev settings instead of the hermetic test overlay.
+addopts = "--ds=config.settings.test"
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+python_files = ["test_*.py"]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+src = ["config", "core", "domain", "domain2", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.11"
+plugins = ["mypy_django_plugin.main", "mypy_drf_plugin.main"]
+files = ["config", "core", "domain", "domain2", "tests"]
+strict = true
+show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = ["boto3", "boto3.*", "botocore", "botocore.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+
+[tool.django-stubs]
+# test.py sets SECRET_KEY before importing base; dev.py needs a real .env.
+django_settings_module = "config.settings.test"
+
+# Coverage on core/ only (policy, redaction, permissions, audit, JWT).
+[tool.coverage.run]
+source = ["core"]
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true

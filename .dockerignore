@@ -1,0 +1,40 @@
+# Keep secrets, the local DB, and dev tooling out of the image build.
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Git metadata
+.git/
+.gitignore
+
+# Secrets. Do not copy these into the image.
+.env
+.env.*
+!.env.example
+
+# Local SQLite (production container uses Postgres via DATABASE_URL)
+*.sqlite3
+db.sqlite3
+
+# Python caches and test artefacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Django generated files
+/staticfiles/
+/media/
+
+# macOS
+.DS_Store

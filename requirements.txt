@@ -1,0 +1,38 @@
+# Pinned dependencies.
+# 5.2.17 patches PYSEC-2026-3717 (5.2.16 patched PYSEC-2026-2090/2091/2092).
+Django==5.2.17
+# 3.17.2 patches CVE-2026-73228 and CVE-2026-73229.
+djangorestframework==3.17.2
+# [crypto] extra pulls cryptography for RS256 / JWKS (Cognito).
+PyJWT[crypto]==2.13.0
+# 50.0.0 patches PYSEC-2026-3552.
+cryptography==50.0.0
+# Production Postgres driver (config.settings.prod). [binary] ships wheels.
+# Dev/test keep SQLite and never import this.
+psycopg[binary]==3.3.4
+# Optional SECRETS_BACKEND=aws overlay only (SSM via runtime role).
+# Lazy-imported in config.secrets. The default env backend needs no boto3.
+boto3==1.43.52
+# Stripe adapter. Lazy-loaded when PAYMENT_PROVIDER=stripe.
+stripe==15.3.1
+# CORS allowlist for browser SPAs (bearer auth, no cookies).
+django-cors-headers==4.9.0
+# Content-Security-Policy on JSON API responses (default-src 'none').
+django-csp==4.0
+# Redis cache. Only used when CACHE_URL is set. Dev/test stay on LocMem.
+redis==7.3.0
+
+# Test harness
+pytest==9.1.1
+pytest-django==4.12.0
+pytest-cov==7.1.0
+
+# Lint + types (drf-stubs 3.17 pins django-stubs>=6; works with Django 5.2)
+ruff==0.15.18
+mypy==2.1.0
+django-stubs==6.0.5
+djangorestframework-stubs==3.17.0
+
+# CI scanners, not runtime imports.
+pip-audit==2.10.1
+bandit==1.9.4

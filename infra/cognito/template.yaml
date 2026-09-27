@@ -1,0 +1,49 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Optional Cognito post-confirmation Lambda. New sign-ups join a default group.
+  Safe to delete. The API does not depend on it. IAM is one AdminAddUserToGroup
+  action on your pool.
+
+Parameters:
+  UserPoolId:
+    Type: String
+    Description: Existing Cognito user pool id, e.g. eu-west-1_XXXXXXXXX
+  DefaultSignupGroup:
+    Type: String
+    Default: public_caller
+    Description: Group new sign-ups join. Default is public_caller.
+
+Resources:
+  PostConfirmationFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      # CodeUri points at this directory; Handler is module.function within it.
+      CodeUri: .
+      Handler: post_confirmation.handler
+      Runtime: python3.11
+      Timeout: 5
+      MemorySize: 128
+      Environment:
+        Variables:
+          DEFAULT_SIGNUP_GROUP: !Ref DefaultSignupGroup
+      Policies:
+        # Least privilege: exactly one action, on exactly this pool.
+        - Statement:
+            - Effect: Allow
+              Action: cognito-idp:AdminAddUserToGroup
+              Resource: !Sub arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${UserPoolId}
+
+  # Allow Cognito to invoke the function as a user-pool trigger.
+  CognitoInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref PostConfirmationFn
+      Principal: cognito-idp.amazonaws.com
+      SourceArn: !Sub arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${UserPoolId}
+
+Outputs:
+  PostConfirmationFnArn:
+    Description: Set this as the pool's Post confirmation trigger (see README).
+    Value: !GetAtt PostConfirmationFn.Arn

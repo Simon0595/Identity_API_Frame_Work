@@ -1,0 +1,11 @@
+"""Identity models (Person / ProfileField). Safe to replace.
+
+core/ must not import this.
+"""
+
+from django.apps import AppConfig
+
+
+class DomainConfig(AppConfig):
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "domain"

@@ -1,0 +1,58 @@
+# Local stack: web (gunicorn + config.settings.prod) + Postgres + Redis.
+# Secrets and DATABASE_URL come from a git-ignored .env, not the image.
+
+services:
+  db:
+    image: postgres:16.6-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-api_web_framework}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # Shared cache for throttle counters and webhook de-dupe across workers.
+  redis:
+    image: redis:7.4-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  web:
+    build: .
+    ports:
+      - "${WEB_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,web}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-api_web_framework}
+      CACHE_URL: ${CACHE_URL:-redis://redis:6379/0}
+      # Local compose is plain HTTP. A real deploy should turn TLS redirect / HSTS on.
+      SECURE_SSL_REDIRECT: "False"
+      SECURE_HSTS_SECONDS: "0"
+      AUTH_ISSUER: local
+      AUTH_LOCAL_SIGNING_KEY: ${AUTH_LOCAL_SIGNING_KEY:-test-only-local-signing-key-not-for-production}
+      AUTH_LOCAL_ISSUER: ${AUTH_LOCAL_ISSUER:-https://local.test/issuer}
+      AUTH_LOCAL_AUDIENCE: ${AUTH_LOCAL_AUDIENCE:-api-web-framework}
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py collectstatic --noinput &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8000"
+
+volumes:
+  pgdata:
